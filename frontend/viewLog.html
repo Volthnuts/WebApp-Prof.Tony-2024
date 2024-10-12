@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend with API</title>
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+    <div id="app">
+
+        <nav class="navbar">
+            <ul>
+                <li><a href="index.html">View Config</a></li>
+                <li><a href="viewLog.html" class="active">View Logs</a></li>
+                <li><a href="tempLog.html">Temperature Log Form</a></li>
+            </ul>
+        </nav>
+
+        <h1>All Drone Logs Server</h1>
+
+        <!-- loading -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+
+        <table id="droneLogs" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th>Drone Name</th>
+                    <th>ID</th>
+                    <th>Country</th>
+                    <th>Temperature (Celsius)</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- table value -->
+            </tbody>
+        </table>
+
+        <div class="pagination" id="pagination"></div>
+
+    </div>
+</body>
+</html>
+
+<script>
+    let currentPage = 1;
+    let totalPages = 1;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchAllDrones(currentPage);
+    });
+
+    function fetchAllDrones(page) {
+        showLoading();
+        fetch(`http://localhost:8000/logs?page=${page}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(response => {
+            totalPages = response.totalPages; 
+            currentPage = page; 
+
+            const droneLogsTableBody = document.querySelector('#droneLogs tbody');
+            droneLogsTableBody.innerHTML = ''; 
+
+            response.data.forEach(item => {
+                displayDroneData(item);
+            });
+
+            createPaginationButtons(totalPages, currentPage);
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+        })
+        .finally(() => {
+            hideLoading(); 
+        });
+    }
+
+
+    function showLoading() {
+        document.getElementById('loading').style.display = 'flex'; 
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').style.display = 'none'; 
+    }
+
+    function createPaginationButtons(totalPages, currentPage) {
+        const paginationDiv = document.getElementById('pagination');
+        paginationDiv.innerHTML = ''; 
+
+        for (let i = 1; i <= totalPages; i++) {
+            const button = document.createElement('button');
+            button.textContent = i;
+            
+            if (i === currentPage) {
+                button.classList.add('active');
+                button.disabled = true; 
+            }
+
+            button.addEventListener('click', () => {
+                fetchAllDrones(i); 
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            paginationDiv.appendChild(button);
+        }
+    }
+
+    function displayDroneData(item) {
+        const droneLogsTableBody = document.querySelector('#droneLogs tbody');
+        const droneRow = `
+                <tr>
+                    <td>${item.drone_name}</td>
+                    <td>${item.drone_id}</td>
+                    <td>${item.country}</td>
+                    <td>${item.celsius}</td>
+                    <td>${new Date(item.created).toLocaleString()}</td>
+                </tr>
+            `;
+        droneLogsTableBody.innerHTML += droneRow;
+    }
+</script>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend with API</title>
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+    <div id="app">
+
+        <nav class="navbar">
+            <ul>
+                <li><a href="index.html" class="active">View Config</a></li>
+                <li><a href="viewLog.html">View Logs</a></li>
+                <li><a href="tempLog.html">Temperature Log Form</a></li>
+            </ul>
+        </nav>
+
+        <h1>All Drone Config Server</h1>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Enter drone ID" />
+            <button id="searchButton">Search</button>
+        </div>
+
+        <!-- alert -->
+        <div id="alertContainer"></div>
+
+        <!-- loading -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+
+        <!-- all data config -->
+        <div id="droneConfig"></div>
+
+    </div>
+</body>
+</html>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchAllDrones();
+
+        document.getElementById('searchButton').addEventListener('click', () => {
+            alertContainer.innerHTML = ''; 
+            const droneId = document.getElementById('searchInput').value.trim();
+            if (droneId) {
+                showLoading()
+
+                fetch(`http://localhost:8000/config/${droneId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(response => {
+                    if (response.data) {
+                        const droneConfigDiv = document.getElementById('droneConfig');
+                        droneConfigDiv.innerHTML = '';  
+                        displayDroneData(response.data);
+                    } else {
+                        const errorAlert = document.createElement('div');
+                        errorAlert.classList.add('alert', 'alert-error'); 
+                        errorAlert.textContent = 'No drone found with this ID';
+                        alertContainer.appendChild(errorAlert); 
+                        errorAlert.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                })
+                .finally(() => {
+                    hideLoading(); 
+                });
+            } else {
+                fetchAllDrones();
+            }
+        });
+    });
+
+    function fetchAllDrones() {
+            showLoading()
+            fetch('http://localhost:8000/config', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(response => {
+                const droneConfigDiv = document.getElementById('droneConfig');
+                droneConfigDiv.innerHTML = ''; 
+                response.data.forEach(item => {
+                    displayDroneData(item);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            })
+            .finally(() => {
+                hideLoading(); 
+            });
+        }
+
+    function showLoading() {
+        document.getElementById('loading').style.display = 'flex'; 
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').style.display = 'none'; 
+    }
+
+    function displayDroneData(item) {
+            const droneConfigDiv = document.getElementById('droneConfig');
+            const droneInfo = `
+                <div class="drone-item">
+                    <h3>Drone Name: ${item.drone_name}</h3>
+                    <p><strong>ID:</strong> ${item.drone_id}</p>
+                    <p><strong>Light:</strong> ${item.light}</p>
+                    <p><strong>Max Speed:</strong> ${item.max_speed}</p>
+                    <p><strong>Country:</strong> ${item.country}</p>
+                    <p><strong>Population:</strong> ${item.population}</p>
+                </div>
+            `;
+            droneConfigDiv.innerHTML += droneInfo;
+    }
+</script>

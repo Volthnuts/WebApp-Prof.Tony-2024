@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend with API</title>
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+    <div id="app">
+
+        <nav class="navbar">
+            <ul>
+                <li><a href="index.html">View Config</a></li>
+                <li><a href="viewLog.html">View Logs</a></li>
+                <li><a href="tempLog.html" class="active">Temperature Log Form</a></li>
+            </ul>
+        </nav>
+
+        <h1>Form Post Temperature Log</h1>
+        <!-- loading -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+
+        <!-- form -->
+        <form id="tempLogForm">
+            <div>
+                <label for="droneId">Drone ID:</label>
+                <input type="text" id="droneId" name="droneId" value="65010120" readonly>
+            </div>
+            <div>
+                <label for="droneName">Drone Name:</label>
+                <input type="text" id="droneName" name="droneName" value="Jakgree Wannathongsuk" readonly>
+            </div>
+            <div>
+                <label for="celsius">Temperature (°C):</label>
+                <input type="number" id="celsius" name="celsius" required>
+            </div>
+            <div>
+                <label for="country">Country:</label>
+                <input type="text" id="country" name="country" value="Thailand" readonly>
+            </div>
+            <button type="submit">Submit</button>
+        </form>
+
+        <!-- response -->
+        <div id="responseContainer" style="display: none;">
+            <h2>Submitted Data:</h2>
+            <pre id="responseData"></pre>
+        </div>
+
+    </div>
+
+<script>
+    function showLoading() {
+        document.getElementById('loading').style.display = 'flex'; 
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').style.display = 'none'; 
+    }
+
+    // submit method
+    document.getElementById('tempLogForm').addEventListener('submit', async function(event) {
+        event.preventDefault(); 
+
+        const droneId = document.getElementById('droneId').value;
+        const droneName = document.getElementById('droneName').value;
+        const celsius = document.getElementById('celsius').value;
+        const country = document.getElementById('country').value;
+
+        const data = {
+            drone_id: droneId,
+            drone_name: droneName,
+            celsius: parseInt(celsius), 
+            country: country,
+        };
+
+        showLoading(); 
+
+        const alertBox = document.createElement('div'); 
+        alertBox.classList.add('alert');
+
+        try {
+            const response = await fetch('http://localhost:8000/logs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alertBox.classList.add('alert-success');
+                alertBox.textContent = 'Temperature log submitted successfully!';
+                
+                const responseContainer = document.getElementById('responseContainer');
+                responseContainer.style.display = 'block'; 
+
+                responseContainer.innerHTML = `<h2>Submitted Data:</h2>`; 
+                const card = document.createElement('div');
+                card.classList.add('response-card'); 
+
+                Object.keys(result.data).forEach(key => {
+                    const item = document.createElement('div');
+                    item.classList.add('response-item'); 
+
+                    const keyElement = document.createElement('span');
+                    keyElement.classList.add('key'); 
+                    keyElement.textContent = key + ':'; 
+
+                    const valueElement = document.createElement('span');
+                    valueElement.classList.add('value');
+                    valueElement.textContent = result.data[key]; 
+
+                    item.appendChild(keyElement); 
+                    item.appendChild(valueElement); 
+                    card.appendChild(item); 
+                });
+
+                responseContainer.appendChild(card);
+                document.getElementById('tempLogForm').reset();
+            } else {
+                alertBox.classList.add('alert-error');
+                alertBox.textContent = 'Error: ' + result.message;
+            }
+        } catch (error) {
+            alertBox.classList.add('alert-error'); 
+            alertBox.textContent = 'Network error: ' + error.message;
+        } finally {
+            hideLoading();
+            document.getElementById('app').insertBefore(alertBox, document.getElementById('tempLogForm'));
+            alertBox.style.display = 'block';
+
+            setTimeout(() => {
+                alertBox.remove();
+            }, 3000);
+        }
+    });
+
+</script>
+</body>
+</html>
